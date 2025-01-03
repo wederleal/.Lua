@@ -1,12 +1,30 @@
+local player = game:GetService("Players").LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
 local TweenService = game:GetService("TweenService")
-local player = game.Players.LocalPlayer
+local coalStorage = workspace:FindFirstChild("MiscellaneousStorage") and workspace.MiscellaneousStorage:FindFirstChild("CoalStorage")
+
+if not coalStorage then
+    warn("CoalStorage não encontrado no workspace.")
+    return
+end
+
+local stopProcessing = false
 
 local function enableNoclip()
-    local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
     if humanoid then
         humanoid.PlatformStand = true
         humanoid:ChangeState(Enum.HumanoidStateType.Physics)
-        player.Character.HumanoidRootPart.CanCollide = false
+        character.HumanoidRootPart.CanCollide = false
+    end
+end
+
+local function floatInAir()
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.PlatformStand = true
+        wait(2)
+        humanoid.PlatformStand = false
     end
 end
 
@@ -19,11 +37,11 @@ local function findProximityPrompt(object)
     return nil
 end
 
-local function moveToCoal(coalPart)
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        local humanoidRootPart = player.Character.HumanoidRootPart
+local function moveToCoal(coalPart, instant)
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        local humanoidRootPart = character.HumanoidRootPart
         local targetPosition = coalPart.Position
-        local tweenInfo = TweenInfo.new(2, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+        local tweenInfo = TweenInfo.new(instant and 1.5 or 5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
         local goal = {Position = targetPosition}
         local tween = TweenService:Create(humanoidRootPart, tweenInfo, goal)
         tween:Play()
@@ -31,64 +49,31 @@ local function moveToCoal(coalPart)
     end
 end
 
-local function collectCoal(coalPart)
-    local proximityPrompt = findProximityPrompt(coalPart)
-    if proximityPrompt then
-        fireproximityprompt(proximityPrompt)
-    end
-end
-
-local function getClosestCoal()
-    local closestCoal = nil
-    local shortestDistance = math.huge
-    local coalStorageFolder = game.Workspace.MiscellaneousStorage.CoalStorage
-    for _, coal in pairs(coalStorageFolder:GetChildren()) do
-        if coal:IsA("BasePart") then
-            local distance = (coal.Position - player.Character.HumanoidRootPart.Position).magnitude
-            if distance < shortestDistance then
-                shortestDistance = distance
-                closestCoal = coal
+local function processCoals()
+    while not stopProcessing do
+        for _, coal in ipairs(coalStorage:GetChildren()) do
+            local proximityPrompt = findProximityPrompt(coal)
+            if proximityPrompt then
+                enableNoclip()
+                moveToCoal(coal, false)
+                wait(0.5)
+                fireproximityprompt(proximityPrompt)
+                print("ProximityPrompt acionado para: " .. coal.Name)
+                floatInAir()
+                wait(2)
             end
         end
-    end
-    return closestCoal
-end
-
-local function processCoals()
-    while true do
-        local closestCoal = getClosestCoal()
-        if closestCoal then
-            moveToCoal(closestCoal)
-            collectCoal(closestCoal)
-            wait(0.3)
-        end
+        print("Aguardando novos carvões...")
         wait(2)
     end
 end
 
-local function onDeath()
-    player.CharacterAdded:Wait()
+player.CharacterAdded:Connect(function()
+    stopProcessing = true
     wait(20)
-    enableNoclip()
+    character = player.Character or player.CharacterAdded:Wait()
+    stopProcessing = false
     processCoals()
-end
+end)
 
-local function optimizePerformance()
-    game.Lighting.GlobalShadows = false
-    game.Lighting.FogEnd = 0
-    game.Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
-    game:GetService("SoundService").SoundEnabled = false
-    for _, part in ipairs(workspace:GetChildren()) do
-        if part:IsA("BasePart") then
-            part.Material = Enum.Material.SmoothPlastic
-            part.CanCollide = false
-            part.Anchored = true
-            part.TextureID = ""
-        end
-    end
-end
-
-optimizePerformance()
-enableNoclip()
 processCoals()
-player.CharacterAdded:Connect(onDeath)
