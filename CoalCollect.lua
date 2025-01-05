@@ -52,9 +52,28 @@ local function moveToCoal(coalPart, instant)
     tween.Completed:Wait()
 end
 
+local function getClosestCoal()
+    local closestCoal = nil
+    local closestDistance = math.huge  -- Inicia com a maior distância possível
+
+    -- Percorre todos os carvões para encontrar o mais próximo
+    for _, coal in ipairs(coalStorage:GetChildren()) do
+        if coal:IsA("BasePart") then
+            local distance = (character.HumanoidRootPart.Position - coal.Position).Magnitude
+            if distance < closestDistance then
+                closestDistance = distance
+                closestCoal = coal
+            end
+        end
+    end
+
+    return closestCoal
+end
+
 local function processCoals()
     while not stopProcessing do
-        for _, coal in ipairs(coalStorage:GetChildren()) do
+        local coal = getClosestCoal()
+        if coal then
             local proximityPrompt = findProximityPrompt(coal)
             if proximityPrompt then
                 enableNoclip()
