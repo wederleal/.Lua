@@ -45,8 +45,12 @@ local function moveToCoal(coalPart, instant)
 
     local humanoidRootPart = character.HumanoidRootPart
     local targetPosition = coalPart.Position
+
+    -- Ajustar a posição do personagem antes de mover para evitar queda
+    humanoidRootPart.CFrame = CFrame.new(targetPosition + Vector3.new(0, 5, 0))  -- Evitar que o personagem caia para baixo
+
     local tweenInfo = TweenInfo.new(instant and 1.5 or 5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-    local goal = {Position = targetPosition}
+    local goal = {Position = coalPart.Position}
     local tween = TweenService:Create(humanoidRootPart, tweenInfo, goal)
     tween:Play()
     tween.Completed:Wait()
@@ -100,6 +104,9 @@ player.CharacterAdded:Connect(function()
         wait(0.1)
     end
 
+    -- Ajuste a posição do personagem para garantir que ele não caia através do chão
+    character.HumanoidRootPart.CFrame = CFrame.new(character.HumanoidRootPart.Position + Vector3.new(0, 5, 0))
+
     -- Continue o processamento após garantir que o HumanoidRootPart esteja pronto
     stopProcessing = false
     processCoals()
@@ -109,5 +116,8 @@ end)
 while not character:FindFirstChild("HumanoidRootPart") do
     wait(0.1)
 end
+
+-- Ajuste de posição inicial
+character.HumanoidRootPart.CFrame = CFrame.new(character.HumanoidRootPart.Position + Vector3.new(0, 5, 0))
 
 processCoals()
