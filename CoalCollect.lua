@@ -38,15 +38,18 @@ local function findProximityPrompt(object)
 end
 
 local function moveToCoal(coalPart, instant)
-    if character and character:FindFirstChild("HumanoidRootPart") then
-        local humanoidRootPart = character.HumanoidRootPart
-        local targetPosition = coalPart.Position
-        local tweenInfo = TweenInfo.new(instant and 1.5 or 5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-        local goal = {Position = targetPosition}
-        local tween = TweenService:Create(humanoidRootPart, tweenInfo, goal)
-        tween:Play()
-        tween.Completed:Wait()
+    -- Aguarde até o HumanoidRootPart estar validado
+    while not character:FindFirstChild("HumanoidRootPart") do
+        wait(0.1)
     end
+
+    local humanoidRootPart = character.HumanoidRootPart
+    local targetPosition = coalPart.Position
+    local tweenInfo = TweenInfo.new(instant and 1.5 or 5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+    local goal = {Position = targetPosition}
+    local tween = TweenService:Create(humanoidRootPart, tweenInfo, goal)
+    tween:Play()
+    tween.Completed:Wait()
 end
 
 local function processCoals()
@@ -72,17 +75,20 @@ player.CharacterAdded:Connect(function()
     stopProcessing = true
     wait(5)  -- Espera 5 segundos após o renascimento
 
+    -- Aguarde até o HumanoidRootPart estar carregado
     character = player.Character or player.CharacterAdded:Wait()
+    while not character:FindFirstChild("HumanoidRootPart") do
+        wait(0.1)
+    end
 
-    -- Espera até o HumanoidRootPart ser carregado corretamente
-    repeat wait(0.1) until character:FindFirstChild("HumanoidRootPart")
-
-    -- Garantir que o personagem não se mova antes do HumanoidRootPart estar presente
+    -- Continue o processamento após garantir que o HumanoidRootPart esteja pronto
     stopProcessing = false
     processCoals()
 end)
 
--- Aguardar até o HumanoidRootPart ser carregado antes de rodar o script
-repeat wait(0.1) until character:FindFirstChild("HumanoidRootPart")
+-- Aguardar até o HumanoidRootPart estar carregado antes de rodar o script
+while not character:FindFirstChild("HumanoidRootPart") do
+    wait(0.1)
+end
 
 processCoals()
