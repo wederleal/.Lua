@@ -9,6 +9,7 @@ if not coalStorage then
 end
 
 local stopProcessing = false
+local isMoving = false
 
 local function enableNoclip()
     local humanoid = character:FindFirstChildOfClass("Humanoid")
@@ -19,12 +20,12 @@ local function enableNoclip()
     end
 end
 
-local function floatInAir()
+local function disableNoclip()
     local humanoid = character:FindFirstChildOfClass("Humanoid")
     if humanoid then
-        humanoid.PlatformStand = true
-        wait(2)
         humanoid.PlatformStand = false
+        humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+        character.HumanoidRootPart.CanCollide = true
     end
 end
 
@@ -37,30 +38,35 @@ local function findProximityPrompt(object)
     return nil
 end
 
-local function moveToCoal(coalPart, instant)
-    if character and character:FindFirstChild("HumanoidRootPart") then
+local function moveToCoal(coalPart)
+    if character and character:FindFirstChild("HumanoidRootPart") and not isMoving then
+        isMoving = true
         local humanoidRootPart = character.HumanoidRootPart
         local targetPosition = coalPart.Position
-        local tweenInfo = TweenInfo.new(instant and 1.5 or 5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-        local goal = {Position = targetPosition}
+        local tweenInfo = TweenInfo.new(2, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+        local goal = { Position = targetPosition }
         local tween = TweenService:Create(humanoidRootPart, tweenInfo, goal)
         tween:Play()
         tween.Completed:Wait()
+        isMoving = false
     end
 end
 
 local function processCoals()
     while not stopProcessing do
         for _, coal in ipairs(coalStorage:GetChildren()) do
-            local proximityPrompt = findProximityPrompt(coal)
-            if proximityPrompt then
-                enableNoclip()
-                moveToCoal(coal, false)
-                wait(0.5)
-                fireproximityprompt(proximityPrompt)
-                print("ProximityPrompt acionado para: " .. coal.Name)
-                floatInAir()
-                wait(2)
+            if coal:IsA("BasePart") then
+                local proximityPrompt = findProximityPrompt(coal)
+                if proximityPrompt then
+                    enableNoclip() -- Habilita o noclip para movimento
+                    moveToCoal(coal)
+                    wait(0.3)
+                    fireproximityprompt(proximityPrompt)
+                    print("ProximityPrompt acionado para: " .. coal.Name)
+                    disableNoclip() -- Restaura a colisão após a coleta
+                    wait(1) -- Espera antes de ir para o próximo carvão
+                    break
+                end
             end
         end
         print("Aguardando novos carvões...")
@@ -76,4 +82,6 @@ player.CharacterAdded:Connect(function()
     processCoals()
 end)
 
-processCoals()
+if not stopProcessing then
+    processCoals()
+end
