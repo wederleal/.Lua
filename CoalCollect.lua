@@ -70,10 +70,19 @@ end
 
 player.CharacterAdded:Connect(function()
     stopProcessing = true
-    wait(5)  -- Alterado de 20 para 5 segundos
+    wait(5)  -- Espera 5 segundos após o renascimento
+
     character = player.Character or player.CharacterAdded:Wait()
+
+    -- Espera até o HumanoidRootPart ser carregado corretamente
+    repeat wait(0.1) until character:FindFirstChild("HumanoidRootPart")
+
+    -- Garantir que o personagem não se mova antes do HumanoidRootPart estar presente
     stopProcessing = false
     processCoals()
 end)
+
+-- Aguardar até o HumanoidRootPart ser carregado antes de rodar o script
+repeat wait(0.1) until character:FindFirstChild("HumanoidRootPart")
 
 processCoals()
